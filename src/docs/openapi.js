@@ -46,7 +46,14 @@ const schemas = {
   },
   TokenRequest: {
     type: "object", additionalProperties: false, required: ["email", "password"],
-    properties: { email: { type: "string", format: "email" }, password: { type: "string", format: "password" } }
+    properties: {
+      email: { type: "string", format: "email", example: "admin@slsea.example" },
+      password: { type: "string", format: "password", example: process.env.SEED_ADMIN_PASSWORD || "SEED_ADMIN_PASSWORD" }
+    },
+    example: {
+      email: "admin@slsea.example",
+      password: process.env.SEED_ADMIN_PASSWORD || "SEED_ADMIN_PASSWORD"
+    }
   },
   Token: {
     type: "object", properties: {

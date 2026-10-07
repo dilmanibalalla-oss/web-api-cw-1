@@ -11,7 +11,23 @@ app.disable("x-powered-by");
 app.set("etag", false);
 app.set("trust proxy", process.env.VERCEL ? 1 : false);
 app.use(requestId);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.set("Access-Control-Allow-Origin", origin);
+    res.set("Vary", "Origin");
+  } else {
+    res.set("Access-Control-Allow-Origin", "*");
+  }
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization, If-Match, If-None-Match, Accept");
+  res.set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+  res.set("Access-Control-Expose-Headers", "ETag, Last-Modified, Location, X-Request-ID");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
 app.use(helmet({
+  strictTransportSecurity: Boolean(process.env.VERCEL),
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"], scriptSrc: ["'self'"], styleSrc: ["'self'", "'unsafe-inline'"],
@@ -53,13 +69,22 @@ app.get([`${config.base}/docs`, `${config.base}/docs/`], (req, res) => {
 </html>`);
 });
 app.use(config.base, (req, res, next) => {
+  if (req.method === "OPTIONS") return next();
   if (!req.accepts("json")) fail(406, "NOT_ACCEPTABLE", "This API provides JSON representations");
   if (["POST", "PUT", "PATCH"].includes(req.method) && !req.is("application/json")) {
     fail(415, "UNSUPPORTED_MEDIA_TYPE", "Use Content-Type: application/json");
   }
   next();
 });
-app.get(`${config.base}/openapi.json`, (req, res) => res.json(openapi));
+app.get(`${config.base}/openapi.json`, (req, res) => {
+  res.json({
+    ...openapi,
+    servers: [{
+      url: `${req.protocol}://${req.get("host")}${config.base}`,
+      description: "Current environment"
+    }]
+  });
+});
 app.use(express.json({ limit: "32kb" }));
 app.use(config.base, async (req, res, next) => {
   await connectDatabase();
