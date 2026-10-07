@@ -1,0 +1,48 @@
+name: Solar API checks
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Create isolated test configuration
+        env:
+          TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
+          TEST_JWT_SECRET: ${{ secrets.TEST_JWT_SECRET }}
+        run: |
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const values = {
+            NODE_ENV: "test",
+            MONGODB_URI: process.env.TEST_MONGODB_URI,
+            JWT_SECRET: process.env.TEST_JWT_SECRET,
+            JWT_ISSUER: "solar-api",
+            JWT_AUDIENCE: "solar-clients"
+          };
+          if (!values.MONGODB_URI || !values.JWT_SECRET) {
+            throw new Error("Configure the repository test secrets");
+          }
+          fs.writeFileSync(
+            ".env.test",
+            Object.entries(values)
+              .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+              .join("\n")
+          );
+          NODE
+      - name: Run integration tests
+        run: npm test
