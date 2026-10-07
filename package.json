@@ -1,0 +1,27 @@
+{
+  "name": "solar-generation-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jurisdiction-scoped solar generation REST API",
+  "type": "commonjs",
+  "engines": { "node": "24.x" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node scripts/seed.js",
+    "device-token": "node scripts/issue-device-token.js",
+    "docs:assets": "node scripts/copy-swagger.js",
+    "postinstall": "node scripts/copy-swagger.js",
+    "test": "node --env-file=.env.test --test --test-concurrency=1 tests/api.test.js"
+  },
+  "dependencies": {
+    "express": "^5.0.0",
+    "mongoose": "^8.0.0",
+    "zod": "^3.24.0",
+    "jsonwebtoken": "^9.0.0",
+    "helmet": "^8.0.0",
+    "dotenv": "^16.0.0",
+    "swagger-ui-dist": "^5.0.0"
+  },
+  "devDependencies": { "supertest": "^7.0.0" }
+}
